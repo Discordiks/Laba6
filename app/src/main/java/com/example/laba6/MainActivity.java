@@ -1,9 +1,14 @@
 package com.example.laba6;
 
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ListView;
 import android.widget.ScrollView;
 import android.widget.SimpleAdapter;
@@ -18,7 +23,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity{
 
     private DBHelper dbHelper;
     private SQLiteDatabase database;
@@ -35,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
-        dbHelper=new DBHelper(getApplicationContext());
+        dbHelper=new DBHelper(getApplicationContext()); //получение бд
         try {
             database=dbHelper.getWritableDatabase(); //и читать, и писать
         } catch (Exception e){
@@ -44,25 +49,36 @@ public class MainActivity extends AppCompatActivity {
 
         listView=findViewById(R.id.ListView);
 
-        ArrayList<HashMap<String,String>>animals =new ArrayList<>(); //общий список
-        HashMap <String,String> animal; //отдельная строка
-        Cursor cursor = database.rawQuery("SELECT animals.id, animals.name AS \"Имя\", animal_types.name AS \"Тип\" FROM animals JOIN animal_types ON animal_types.id = animals.animal_type_id", null);
+        ArrayList<HashMap<String,String>>categories =new ArrayList<>(); //общий список
+        HashMap <String,String> category; //отдельная строка
+        Cursor cursor = database.rawQuery("SELECT categories.id, categories.name AS \"Категория\" FROM categories", null);
         cursor.moveToFirst();
         while (!cursor.isAfterLast()){ //сохраняем каждую строчку в массив
-            animal=new HashMap<>();
-            animal.put("name", cursor.getString(1));
-            animal.put("type", cursor.getString(2));
-            animals.add(animal);
+            category=new HashMap<>();
+            category.put("name", cursor.getString(1));
+            categories.add(category);
             cursor.moveToNext();
         }
         cursor.close();
 
         SimpleAdapter adapter = new SimpleAdapter(
                 getApplicationContext(),
-                animals, android.R.layout.simple_list_item_2,
-                new String[]{"name","type"},
-                new int[]{android.R.id.text1, android.R.id.text2}
+                categories, android.R.layout.simple_list_item_2, //шаблон
+                new String[]{"name"}, //ключи из hashmap
+                new int[]{android.R.id.text1} //id из шаблона
         );
         listView.setAdapter(adapter);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Intent intent=new Intent(getApplicationContext(), ItemActivity.class);
+                intent.putExtra("position",position); //ключ + значение
+                //String category_name = (String) (listView.getItemAtPosition(position));
+                HashMap itemData = (HashMap) listView.getItemAtPosition(position);
+                String category_name = String.valueOf(itemData.get("name"));
+                intent.putExtra("category_name",category_name); //ключ + значение
+                startActivity(intent);
+            }
+        });
     }
 }
